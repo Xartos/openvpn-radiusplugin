@@ -484,7 +484,13 @@ int RadiusPacket::radiusReceive(list<RadiusServer> *serverlist)
 		//	Get server IP address (no check if input is IP address or DNS name
 	    if(!(h=gethostbyname(server->getName().c_str())))
 		{
-			return UNKNOWN_HOST;
+			if (i >= i_server - 1) {
+				return UNKNOWN_HOST; // Last entry, lets abort
+			} else {
+				server++;
+				i++;
+				continue;
+			}
 		}
 		
 	    remoteServAddr.sin_family=h->h_addrtype;

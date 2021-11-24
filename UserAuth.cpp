@@ -148,14 +148,31 @@ int UserAuth::sendAcceptRequestPacket(PluginContext * context)
 			}
 	}
 	
-	
-	
-	if (DEBUG (context->getVerbosity()))
-		cerr << getTime() << "RADIUS-PLUGIN: Send packet to " << server->getName().c_str() <<".\n";
-	//send the packet
-	if (packet.radiusSend(server)<0)
-	{
-		cerr << getTime() << "RADIUS-PLUGIN: Packet was not sent.\n";
+	int retry = 1;
+	list<RadiusServer>::iterator tmpServer;
+	tmpServer = serverlist->begin();
+	while(retry) {
+
+		if (DEBUG (context->getVerbosity()))
+			cerr << getTime() << "RADIUS-PLUGIN: Send packet to " << tmpServer->getName().c_str() <<".\n";
+		//send the packet
+		int respose_code = packet.radiusSend(tmpServer);
+		if (respose_code<0)
+		{
+			cerr << getTime() << "RADIUS-PLUGIN: Sent nothing, return code:" << respose_code << endl;
+			++tmpServer;
+			if (tmpServer != serverlist->end()) {
+				retry = 1;
+				cerr << getTime() << "RADIUS-PLUGIN: Packet was not sent, retrying.\n";
+			} else {
+				retry = 0;
+				cerr << getTime() << "RADIUS-PLUGIN: Packet was not sent, this was the last entry.\n";
+			}
+		} else {
+			if (DEBUG (context->getVerbosity()))
+				cerr << getTime() << "RADIUS-PLUGIN: succesfully sent to " << tmpServer->getName().c_str() <<".\n";
+			retry = 0;
+		}
 	}
 	//receive the packet
 	int rc=packet.radiusReceive(serverlist);

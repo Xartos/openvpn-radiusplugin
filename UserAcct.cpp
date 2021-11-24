@@ -376,11 +376,33 @@ int UserAcct::sendStartPacket(PluginContext * context)
 				cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT:  Fail to add attribute ATTRIB_Framed_Protocol.\n";
 			}
 	}
-	
-	//send the packet	
-	if (packet.radiusSend(server)<0)
-	{
-		cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT:  Packet was not sent.\n";
+
+	int retry = 1;
+	list<RadiusServer>::iterator tmpServer;
+	tmpServer = serverlist->begin();
+	while(retry) {
+
+		if (DEBUG (context->getVerbosity()))
+			cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT: Send packet to " << tmpServer->getName().c_str() <<".\n";
+		//send the packet
+		int respose_code = packet.radiusSend(tmpServer);
+		if (respose_code<0)
+		{
+			if (DEBUG (context->getVerbosity()))
+				cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT: Sent nothing, return code:" << respose_code << endl;
+			++tmpServer;
+			if (tmpServer != serverlist->end()) {
+				retry = 1;
+				cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT:  Packet was not sent, retrying.\n";
+			} else {
+				retry = 0;
+				cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT: Packet was not sent, this was the last entry.\n";
+			}
+		} else {
+			if (DEBUG (context->getVerbosity()))
+				cerr << getTime() << "RADIUS-PLUGIN: BACKGROUND-ACCT: succesfully sent to " << tmpServer->getName().c_str() <<".\n";
+			retry = 0;
+		}
 	}
 	
 	//receive the response
